@@ -17,6 +17,46 @@ export const api = {
     return getRoomById(id);
   },
   
+  createRoom: async (roomData: Omit<Room, 'id'>): Promise<Room> => {
+    await delay(700);
+    const newRoom = {
+      ...roomData,
+      id: rooms.length + 1
+    };
+    rooms.push(newRoom);
+    return newRoom;
+  },
+  
+  updateRoom: async (id: number, updates: Partial<Room>): Promise<Room> => {
+    await delay(500);
+    
+    const index = rooms.findIndex(room => room.id === id);
+    if (index === -1) throw new Error("Room not found");
+    
+    rooms[index] = { ...rooms[index], ...updates };
+    return rooms[index];
+  },
+  
+  deleteRoom: async (id: number): Promise<boolean> => {
+    await delay(500);
+    
+    const index = rooms.findIndex(room => room.id === id);
+    if (index === -1) throw new Error("Room not found");
+    
+    // Check if there are any active reservations for this room
+    const activeReservations = reservations.filter(
+      res => res.roomId === id && res.status === 'confirmed'
+    );
+    
+    if (activeReservations.length > 0) {
+      throw new Error("Cannot delete room with active reservations");
+    }
+    
+    // Remove the room
+    rooms.splice(index, 1);
+    return true;
+  },
+  
   // Reservation operations
   getReservations: async (): Promise<Reservation[]> => {
     await delay(500);
@@ -77,5 +117,18 @@ export const api = {
     await delay(200);
     // For demo purposes, always return the first user
     return users[0];
+  },
+  
+  // Admin operations
+  getAdminStats: async () => {
+    await delay(400);
+    
+    return {
+      totalRooms: rooms.length,
+      availableRooms: rooms.filter(room => room.isAvailable !== false).length,
+      pendingReservations: reservations.filter(res => res.status === 'pending').length,
+      confirmedReservations: reservations.filter(res => res.status === 'confirmed').length,
+      cancelledReservations: reservations.filter(res => res.status === 'cancelled' || res.status === 'rejected').length,
+    };
   }
 };
